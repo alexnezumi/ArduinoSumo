@@ -40,9 +40,9 @@ void loop() {
   //Cálculo e conversão da leitura do sensor ultrassônico
   long microsec = ultrasonic.timing();
   float distancia = ultrasonic.convert(microsec, Ultrasonic::CM);
+
   //Mostra as leitura dos sensores
-  //Quando for ler remova o /* */
-  /*
+  
     Serial.print("A distancia: ");
     Serial.println(distancia);
     Serial.print("Sensor da frente: ");
@@ -50,7 +50,8 @@ void loop() {
     Serial.print("Sensor da tras: ");
     Serial.println(digitalRead(sensor2));
     delay(1000);
-  */
+  
+  
   //Verifica se tem alguma coisa na sua frente e se os sensor estão no branco
   if (distancia > 20 && digitalRead(sensor1) == 0 && digitalRead(sensor2) == 0) {
     Serial.println("procurando oponente");
@@ -83,7 +84,7 @@ void loop() {
 }
 //********************Movimenta o robô para frente********************
 
-void frente() {
+void tras() {
   motor1.run(FORWARD); //Motor traseiro esquerdo
   motor2.run(FORWARD); //Motor dianteiro esquerdo
   motor3.run(FORWARD); //Motor dianteiro direito
@@ -91,7 +92,7 @@ void frente() {
 }
 //********************Movimenta o robô para trás********************
 
-void tras() {
+void frente() {
   motor1.run(BACKWARD); //Motor traseiro esquerdo
   motor2.run(BACKWARD); //Motor dianteiro esquerdo
   motor3.run(BACKWARD); //Motor dianteiro direito
@@ -117,7 +118,7 @@ void esquerda() {
 
 void procura() {
   frente();
-  delay(300);
+  delay(150);
   esquerda();
   delay(300);
 }
