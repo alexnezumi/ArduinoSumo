@@ -11,8 +11,8 @@
 
 #define trigger A2
 #define echo   A3
-#define sensor1 A4
-#define sensor2 A5
+#define sensor2 A4
+#define sensor1 A5
 
 //********************Criação dos objetos********************
 
@@ -118,7 +118,7 @@ void esquerda() {
 
 void procura() {
   frente();
-  delay(150);
+  delay(400);
   esquerda();
-  delay(300);
+  delay(200);
 }
