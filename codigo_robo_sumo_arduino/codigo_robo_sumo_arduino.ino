@@ -114,11 +114,30 @@ void esquerda() {
   motor3.run(BACKWARD); //Motor dianteiro direito
   motor4.run(BACKWARD); //Motor traseiro direito
 }
-//********************Movimenta o robô em forma de quadrado********************
 
+//********************Movimenta o robô em forma de quadrado********************
 void procura() {
-  frente();
-  delay(400);
-  esquerda();
-  delay(200);
+  Serial.println("Procurando oponente...");
+
+  while (true) {
+    // Atualiza as leituras do sensor ultrassônico
+    long microsec = ultrasonic.timing();
+    float distancia = ultrasonic.convert(microsec, Ultrasonic::CM);
+
+    // Verifica se encontrou oponente
+    if (distancia > 0 && distancia < 30) { // Distância ajustada para detectar o oponente
+      Serial.println("Oponente detectado! Atacando!");
+      frente(); // Vai em direção ao oponente
+      delay(500); // Avança para garantir a aproximação
+      return; // Sai da função de busca
+    }
+
+    // Movimento contínuo contornando a arena
+    frente();           // Movimenta para frente
+    delay(700);         // Tempo curto em linha reta
+    esquerda();         // Faz uma curva suave para contornar a arena
+    delay(300);         // Tempo da curva
+    parada();           // Pausa para recalcular as leituras
+    delay(100);         // Breve intervalo antes de continuar
+  }
 }
