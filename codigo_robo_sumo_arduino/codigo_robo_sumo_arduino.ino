@@ -81,6 +81,10 @@ void loop() {
     frente();
     delay(500);
   }
+  if (digitalRead(sensor1) == 1 && digitalRead(sensor2) == 1) {
+    Serial.println("Estou na Africa");
+    parada();
+  }
 }
 //********************Movimenta o robô para frente********************
 
@@ -125,12 +129,30 @@ void procura() {
     float distancia = ultrasonic.convert(microsec, Ultrasonic::CM);
 
     // Verifica se encontrou oponente
-    if (distancia > 0 && distancia < 30) { // Distância ajustada para detectar o oponente
+    if (distancia > 0 && distancia < 30) { // Ajuste a distância para detectar o oponente
       Serial.println("Oponente detectado! Atacando!");
-      frente(); // Vai em direção ao oponente
+      frente();  // Vai em direção ao oponente
       delay(500); // Avança para garantir a aproximação
       return; // Sai da função de busca
     }
+
+    // Verifica os sensores infravermelhos para evitar a borda
+    if (digitalRead(sensor1) == 1) { // Sensor da frente detectou a borda
+      Serial.println("Sensor da frente detectou borda. Recuando...");
+      tras();   // Move para trás
+      delay(1000); // Tempo para recuar
+      esquerda(); // Faz curva para evitar a borda
+      delay(500);
+    } else if (digitalRead(sensor2) == 1) { // Sensor de trás detectou a borda
+      Serial.println("Sensor de trás detectou borda. Avançando...");
+      frente(); // Move para frente
+      delay(500); // Tempo para avançar
+      esquerda(); // Faz curva para evitar a borda
+      delay(300);
+    } else if (digitalRead(sensor1) == 1 && digitalRead(sensor2) == 1) {
+    Serial.println("Estou na Africa");
+    parada();
+  }
 
     // Movimento contínuo contornando a arena
     frente();           // Movimenta para frente
