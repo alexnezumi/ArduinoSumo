@@ -1,18 +1,19 @@
 //Programa: Robô sumô
 //Autor: Alex
-//Versão: 1.0
+//Versão: 1.2
 
 //********************Inclusão das bibliotecas**************
 
-#include <AFMotor.h>//Biblioteca do motor shield
-#include <Ultrasonic.h>//Bibloteca do sensor ultrassônico
+#include <AFMotor.h>      // Biblioteca do motor shield
+#include <Ultrasonic.h>   // Biblioteca do sensor ultrassônico
 
 //********************Definição dos pinos********************
 
-#define trigger A2
-#define echo   A3
-#define sensor2 A4
-#define sensor1 A5
+#define sensor1 A5  // Sensor frontal esquerdo
+#define sensor2 A4  // Sensor traseiro esquerdo
+#define sensor3 A3  // Sensor traseiro direito
+#define echo   A2   // Pino de eco do ultrassônico
+#define trigger A1  // Pino de trigger do ultrassônico
 
 //********************Criação dos objetos********************
 
@@ -25,141 +26,130 @@ Ultrasonic ultrasonic(trigger, echo);
 //********************Função de configuração******************
 
 void setup() {
-  //Configuração de velocidade dos motores
-  motor1.setSpeed(255);//Velocidade vai de 0 a 255
+  // Configuração de velocidade dos motores
+  motor1.setSpeed(255); // Velocidade máxima
   motor2.setSpeed(255);
   motor3.setSpeed(255);
   motor4.setSpeed(255);
-  Serial.begin(9600);//Habilita a comunicação serial
-  pinMode(sensor1, INPUT);//Configura o pino do sensor 1 como entrada
-  pinMode(sensor2, INPUT);//Configura o pino do sensor 2 como entrada
+  Serial.begin(9600);  // Habilita a comunicação serial
+  pinMode(sensor1, INPUT);
+  pinMode(sensor2, INPUT);
+  pinMode(sensor3, INPUT);
 }
-//********************Função de principal********************
+
+//********************Função principal********************
 
 void loop() {
-  //Cálculo e conversão da leitura do sensor ultrassônico
+  // Leitura do sensor ultrassônico
   long microsec = ultrasonic.timing();
   float distancia = ultrasonic.convert(microsec, Ultrasonic::CM);
 
-  //Mostra as leitura dos sensores
-  
-    Serial.print("A distancia: ");
-    Serial.println(distancia);
-    Serial.print("Sensor da frente: ");
-    Serial.println(digitalRead(sensor1));
-    Serial.print("Sensor da tras: ");
-    Serial.println(digitalRead(sensor2));
-    delay(1000);
-  
-  
-  //Verifica se tem alguma coisa na sua frente e se os sensor estão no branco
-  if (distancia > 20 && digitalRead(sensor1) == 0 && digitalRead(sensor2) == 0) {
-    Serial.println("procurando oponente");
-    //Duas formas de procurar o oponente na arena
-    procura();//Procura em forma de quadrado
-    //esquerda();//Fica girando
-  }
-  //Se caso encontrar algo na sua frente
-  if (distancia < 20 && distancia > 0 && digitalRead(sensor1) == 0 && digitalRead(sensor2) == 0) {
-    while (digitalRead(sensor1) == 0) { //Prende na condição até o sensor encotrar a borda da arena
-      Serial.println("achei o oponente");
-      frente();//Movimenta para frente
-    }
-    parada();
-    delay(1000);
-    tras();
-    delay(1000);
-  }
-  //Se caso encontre a borda e não o oponente
-  if (digitalRead(sensor1) == 1 && digitalRead(sensor2) == 0) {
-    Serial.println("Sensor da frente achou borda");
+  // Leitura dos sensores reflexivos
+  int leituraSensor1 = digitalRead(sensor1);
+  int leituraSensor2 = digitalRead(sensor2);
+  int leituraSensor3 = digitalRead(sensor3);
+
+  // Exibe leituras no monitor serial
+  Serial.print("Distância: ");
+  Serial.println(distancia);
+  Serial.print("Sensor1 (frontal): ");
+  Serial.println(leituraSensor1);
+  Serial.print("Sensor2 (traseiro esquerdo): ");
+  Serial.println(leituraSensor2);
+  Serial.print("Sensor3 (traseiro direito): ");
+  Serial.println(leituraSensor3);
+
+  // Caso não detecte oponente e esteja seguro na arena
+  if (distancia > 20 && leituraSensor1 == 0 && leituraSensor2 == 0 && leituraSensor3 == 0) {
+    Serial.println("Procurando oponente...");
+    procura(); // Função otimizada para busca
+  } 
+  // Caso detecte oponente à frente
+  else if (distancia <= 20 && distancia > 0 && leituraSensor1 == 0) {
+    Serial.println("Oponente encontrado!");
+    frente(); // Avança para empurrar o oponente
+  } 
+  // Lógica para bordas
+  else if (leituraSensor1 == 1 && leituraSensor3 == 0) { // Apenas Sensor 1 detecta borda
+    Serial.println("Borda detectada à frente esquerda!");
     tras();
     delay(500);
-  }
-  if (digitalRead(sensor1) == 0 && digitalRead(sensor2) == 1) {
-    Serial.println("Sensor de tras achou borda");
+    esquerda();
+    delay(300);
+  } 
+  else if (leituraSensor3 == 1 && leituraSensor1 == 0) { // Apenas Sensor 3 detecta borda
+    Serial.println("Borda detectada à frente direita!");
+    tras();
+    delay(500);
+    direita();
+    delay(300);
+  } 
+  else if (leituraSensor1 == 1 && leituraSensor3 == 1) { // Ambos detectam borda
+    Serial.println("Borda detectada em ambos os lados!");
+    tras();
+    delay(500);
+  } 
+  // Caso detecte borda atrás
+  else if (leituraSensor2 == 1) {
+    Serial.println("Borda detectada atrás!");
     frente();
     delay(500);
   }
-  if (digitalRead(sensor1) == 1 && digitalRead(sensor2) == 1) {
-    Serial.println("Estou na Africa");
-    parada();
-  }
 }
+
 //********************Movimenta o robô para frente********************
 
 void tras() {
-  motor1.run(FORWARD); //Motor traseiro esquerdo
-  motor2.run(FORWARD); //Motor dianteiro esquerdo
-  motor3.run(FORWARD); //Motor dianteiro direito
-  motor4.run(FORWARD); //Motor traseiro direito
+  motor1.run(FORWARD);  // Motor traseiro esquerdo
+  motor2.run(FORWARD);  // Motor dianteiro esquerdo
+  motor3.run(FORWARD);  // Motor dianteiro direito
+  motor4.run(FORWARD);  // Motor traseiro direito
 }
+
 //********************Movimenta o robô para trás********************
 
 void frente() {
-  motor1.run(BACKWARD); //Motor traseiro esquerdo
-  motor2.run(BACKWARD); //Motor dianteiro esquerdo
-  motor3.run(BACKWARD); //Motor dianteiro direito
-  motor4.run(BACKWARD); //Motor traseiro direito
+  motor1.run(BACKWARD);  // Motor traseiro esquerdo
+  motor2.run(BACKWARD);  // Motor dianteiro esquerdo
+  motor3.run(BACKWARD);  // Motor dianteiro direito
+  motor4.run(BACKWARD);  // Motor traseiro direito
 }
+
 //********************Parada dos motores********************
 
 void parada() {
-  motor1.run(RELEASE); //Motor traseiro esquerdo
-  motor2.run(RELEASE); //Motor dianteiro esquerdo
-  motor3.run(RELEASE); //Motor dianteiro direito
-  motor4.run(RELEASE); //Motor traseiro direito
+  motor1.run(RELEASE);  // Motor traseiro esquerdo
+  motor2.run(RELEASE);  // Motor dianteiro esquerdo
+  motor3.run(RELEASE);  // Motor dianteiro direito
+  motor4.run(RELEASE);  // Motor traseiro direito
 }
+
 //********************Movimenta o robô para esquerda********************
 
 void esquerda() {
-  motor1.run(FORWARD); //Motor traseiro esquerdo
-  motor2.run(FORWARD); //Motor dianteiro esquerdo
-  motor3.run(BACKWARD); //Motor dianteiro direito
-  motor4.run(BACKWARD); //Motor traseiro direito
+  motor1.run(FORWARD);   // Motor traseiro esquerdo
+  motor2.run(FORWARD);   // Motor dianteiro esquerdo
+  motor3.run(BACKWARD);  // Motor dianteiro direito
+  motor4.run(BACKWARD);  // Motor traseiro direito
 }
 
-//********************Movimenta o robô em forma de quadrado********************
+//********************Movimenta o robô para direita********************
+
+void direita() {
+  motor1.run(BACKWARD);  // Motor traseiro esquerdo
+  motor2.run(BACKWARD);  // Motor dianteiro esquerdo
+  motor3.run(FORWARD);   // Motor dianteiro direito
+  motor4.run(FORWARD);   // Motor traseiro direito
+}
+
+//********************Busca otimizada para oponente********************
+
 void procura() {
-  Serial.println("Procurando oponente...");
-
-  while (true) {
-    // Atualiza as leituras do sensor ultrassônico
-    long microsec = ultrasonic.timing();
-    float distancia = ultrasonic.convert(microsec, Ultrasonic::CM);
-
-    // Verifica se encontrou oponente
-    if (distancia > 0 && distancia < 30) { // Ajuste a distância para detectar o oponente
-      Serial.println("Oponente detectado! Atacando!");
-      frente();  // Vai em direção ao oponente
-      delay(500); // Avança para garantir a aproximação
-      return; // Sai da função de busca
-    }
-
-    // Verifica os sensores infravermelhos para evitar a borda
-    if (digitalRead(sensor1) == 1) { // Sensor da frente detectou a borda
-      Serial.println("Sensor da frente detectou borda. Recuando...");
-      tras();   // Move para trás
-      delay(1000); // Tempo para recuar
-      esquerda(); // Faz curva para evitar a borda
-      delay(500);
-    } else if (digitalRead(sensor2) == 1) { // Sensor de trás detectou a borda
-      Serial.println("Sensor de trás detectou borda. Avançando...");
-      frente(); // Move para frente
-      delay(500); // Tempo para avançar
-      esquerda(); // Faz curva para evitar a borda
-      delay(300);
-    } else if (digitalRead(sensor1) == 1 && digitalRead(sensor2) == 1) {
-    Serial.println("Estou na Africa");
-    parada();
-  }
-
-    // Movimento contínuo contornando a arena
-    frente();           // Movimenta para frente
-    delay(700);         // Tempo curto em linha reta
-    esquerda();         // Faz uma curva suave para contornar a arena
-    delay(300);         // Tempo da curva
-    parada();           // Pausa para recalcular as leituras
-    delay(100);         // Breve intervalo antes de continuar
-  }
+  // Movimento em busca do oponente
+  esquerda();  // Gira para a esquerda
+  delay(300);
+  frente();    // Avança levemente
+  delay(400);
+  parada();    // Pausa para análise
+  delay(100);
 }
